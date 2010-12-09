@@ -18,6 +18,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Xml.Linq;
 
 using RestSharp.Extensions;
@@ -64,7 +65,7 @@ namespace RestSharp.Deserializers
 			return x;
 		}
 
-		void RemoveNamespace(XDocument xdoc)
+	    static void RemoveNamespace(XDocument xdoc)
 		{
 			foreach (XElement e in xdoc.Root.DescendantsAndSelf())
 			{
@@ -96,26 +97,11 @@ namespace RestSharp.Deserializers
 
 				if (value == null)
 				{
-					// special case for inline list items
-					if (type.IsGenericType)
-					{
-						var genericType = type.GetGenericArguments()[0];
-
-						var first = GetElementByName(root, genericType.Name);
-						if (first != null)
-						{
-							var elements = root.Elements(first.Name);
-
-							var list = (IList)Activator.CreateInstance(type);
-							PopulateListFromElements(genericType, elements, list);
-							prop.SetValue(x, list, null);
-
-						}
-					}
-					continue;
+				    HandleInlineList(x, prop, type, root);
+				    continue;
 				}
 
-				// check for nullable and extract underlying type
+			    // check for nullable and extract underlying type
 				if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
 				{
 					type = type.GetGenericArguments()[0];
@@ -183,6 +169,20 @@ namespace RestSharp.Deserializers
 					var list = HandleListDerivative(x, root, prop.Name, type);
 					prop.SetValue(x, list, null);
 				}
+                else if (type.IsArray)
+                {
+                    var element_type = type.GetElementType();
+                    var container = GetElementByName(root, prop.Name.AsNamespaced(Namespace));
+                    var first = container.Elements().FirstOrDefault();
+                    var elements = container.Elements(first.Name);
+                    var array = Array.CreateInstance(element_type, elements.Count());
+                    for (var i = 0; i < elements.Count(); i++)
+                    {
+                        var item = CreateAndMap(element_type, elements.ElementAt(i));
+                        array.SetValue(item, i);
+                    }
+                    prop.SetValue(x, array, null);
+                }
 				else
 				{
 					// nested property classes
@@ -199,7 +199,43 @@ namespace RestSharp.Deserializers
 			}
 		}
 
-		private void PopulateListFromElements(Type t, IEnumerable<XElement> elements, IList list)
+	    void HandleInlineList(object x, PropertyInfo prop, Type type, XElement root)
+	    {
+	        if (type.IsGenericType)
+	        {
+	            var genericType = type.GetGenericArguments()[0];
+
+	            var first = GetElementByName(root, genericType.Name);
+	            if (first != null)
+	            {
+	                var elements = root.Elements(first.Name);
+
+	                var list = (IList)Activator.CreateInstance(type);
+	                PopulateListFromElements(genericType, elements, list);
+	                prop.SetValue(x, list, null);
+
+	            }
+	        }
+            else if (type.IsArray)
+            {
+                var element_type = type.GetElementType();
+                var first = GetElementByName(root, element_type.Name);
+
+                if (first != null)
+                {
+                    var elements = root.Elements(first.Name);
+                    var array = Array.CreateInstance(element_type, elements.Count());
+
+                    for (var i = 0; i < elements.Count(); i++)
+                        array.SetValue(CreateAndMap(element_type, elements.ElementAt(i)), i);
+
+                    prop.SetValue(x, array, null);
+                }
+
+            }
+	    }
+
+	    private void PopulateListFromElements(Type t, IEnumerable<XElement> elements, IList list)
 		{
 			foreach (var element in elements)
 			{

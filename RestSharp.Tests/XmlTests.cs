@@ -15,6 +15,7 @@
 #endregion
 
 using System;
+using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 using RestSharp.Deserializers;
@@ -28,70 +29,73 @@ namespace RestSharp.Tests
 	{
 		private const string GuidString = "AC1FC4BC-087A-4242-B8EE-C53EBE9887A5";
 
-		[Fact]
-		public void Can_Deserialize_Directly_To_Lists_Off_Root_Element()
-		{
-			var xmlpath = Environment.CurrentDirectory + @"\SampleData\directlists.xml";
-			var doc = XDocument.Load(xmlpath);
+        private static T deserialize_output<T>(string xml_file) where T : new()
+        {
+            var xmlpath = Path.Combine(Environment.CurrentDirectory, xml_file);
+            var doc = XDocument.Load(xmlpath);
 
-			var xml = new XmlDeserializer();
-			var output = xml.Deserialize<List<Database>>(new RestResponse { Content = doc.ToString() });
+            var xml = new XmlDeserializer();
+            var output = xml.Deserialize<T>(new RestResponse { Content = doc.ToString() });
 
-			Assert.NotEmpty(output);
-			Assert.Equal(2, output.Count);
-		}
+            return output;
+        }
 
-		[Fact]
-		public void Can_Deserialize_Parentless_aka_Inline_List_Items_Without_Matching_Class_Name()
-		{
-			var xmlpath = Environment.CurrentDirectory + @"\SampleData\InlineListSample.xml";
-			var doc = XDocument.Load(xmlpath);
+        [Fact]
+        public void Can_Deserialize_Parentless_aka_Inline_List_Items_Without_Matching_Class_Name()
+        {
+            var output = deserialize_output<InlineListSample>(@"SampleData\InlineListSample.xml");
+            Assert.NotEmpty(output.Images);
+            Assert.Equal(4, output.Images.Count);
+        }
 
-			var xml = new XmlDeserializer();
-			var output = xml.Deserialize<InlineListSample>(new RestResponse { Content = doc.ToString() });
+        [Fact]
+        public void Can_Deserialize_Parentless_aka_Inline_List_Items_With_Matching_Class_Name()
+        {
+            var output = deserialize_output<InlineListSample>(@"SampleData\InlineListSample.xml");
+            Assert.NotEmpty(output.images);
+            Assert.Equal(4, output.images.Count);
+        }
 
-			Assert.NotEmpty(output.Images);
-			Assert.Equal(4, output.Images.Count);
-		}
+        [Fact]
+        public void Can_Deserialize_Nested_List_Items_Without_Matching_Class_Name()
+        {
+            var output = deserialize_output<InlineListSample>(@"SampleData\NestedListSample.xml");
+            Assert.NotEmpty(output.Images);
+            Assert.Equal(4, output.Images.Count);
+        }
 
-		[Fact]
-		public void Can_Deserialize_Parentless_aka_Inline_List_Items_With_Matching_Class_Name()
-		{
-			var xmlpath = Environment.CurrentDirectory + @"\SampleData\InlineListSample.xml";
-			var doc = XDocument.Load(xmlpath);
+        [Fact]
+        public void Can_Deserialize_Nested_List_Items_With_Matching_Class_Name()
+        {
+            var output = deserialize_output<InlineListSample>(@"SampleData\NestedListSample.xml");
+            Assert.NotEmpty(output.images);
+            Assert.Equal(4, output.images.Count);
+        }
 
-			var xml = new XmlDeserializer();
-			var output = xml.Deserialize<InlineListSample>(new RestResponse { Content = doc.ToString() });
+        [Fact]
+        public void Can_Deserialize_Inline_List_Items_Without_Matching_Class_Name_into_array()
+        {
+            var output = deserialize_output<InlineArraySample>(@"SampleData\InlineListSample.xml");
+            Assert.NotEmpty(output.images);
+            Assert.Equal(4, output.images.Count());
+        }
 
-			Assert.NotEmpty(output.images);
-			Assert.Equal(4, output.images.Count);
-		}
+        [Fact]
+        public void Can_Deserialize_Nest_List_Items_With_Matching_Class_Name_Into_Array()
+        {
+            var output = deserialize_output<NestedArraySample>(@"SampleData\NestedListSample.xml");
+            Assert.NotEmpty(output.images);
+            Assert.Equal(4, output.images.Count());
+        }
 
-		[Fact]
-		public void Can_Deserialize_Nested_List_Items_Without_Matching_Class_Name()
-		{
-			var xmlpath = Environment.CurrentDirectory + @"\SampleData\NestedListSample.xml";
-			var doc = XDocument.Load(xmlpath);
+        [Fact]
+        public void Can_Deserialize_Nest_List_Items_Without_Matching_Class_Name_Into_Array()
+        {
+            var output = deserialize_output<NestedArraySample>(@"SampleData\NestedListSample.xml");
+            Assert.NotEmpty(output.Images);
+            Assert.Equal(4, output.Images.Count());
+        }
 
-			var xml = new XmlDeserializer();
-			var output = xml.Deserialize<InlineListSample>(new RestResponse { Content = doc.ToString() });
-
-			Assert.NotEmpty(output.Images);
-			Assert.Equal(4, output.Images.Count);
-		}
-
-		[Fact]
-		public void Can_Deserialize_Nested_List_Items_With_Matching_Class_Name()
-		{
-			var xmlpath = Environment.CurrentDirectory + @"\SampleData\NestedListSample.xml";
-			var doc = XDocument.Load(xmlpath);
-
-			var xml = new XmlDeserializer();
-			var output = xml.Deserialize<InlineListSample>(new RestResponse { Content = doc.ToString() });
-
-			Assert.NotEmpty(output.images);
-			Assert.Equal(4, output.images.Count);
-		}
 
 		[Fact]
 		public void Can_Deserialize_Empty_Elements_to_Nullable_Values()
