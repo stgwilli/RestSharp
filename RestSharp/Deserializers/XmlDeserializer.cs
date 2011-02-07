@@ -178,8 +178,10 @@ namespace RestSharp.Deserializers
                     var array = Array.CreateInstance(element_type, elements.Count());
                     for (var i = 0; i < elements.Count(); i++)
                     {
-                        var item = CreateAndMap(element_type, elements.ElementAt(i));
-                        array.SetValue(item, i);
+                        if (element_type.Equals(typeof(String)))
+                            array.SetValue(elements.ElementAt(i).Value, i);
+                        else
+                            array.SetValue(CreateAndMap(element_type, elements.ElementAt(i)), i);
                     }
                     prop.SetValue(x, array, null);
                 }
@@ -277,7 +279,7 @@ namespace RestSharp.Deserializers
 
 		private object CreateAndMap(Type t, XElement element)
 		{
-			var item = Activator.CreateInstance(t);
+            var item = Activator.CreateInstance(t);
 			Map(item, element);
 			return item;
 		}

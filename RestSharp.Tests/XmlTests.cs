@@ -96,6 +96,14 @@ namespace RestSharp.Tests
             Assert.Equal(4, output.Images.Count());
         }
 
+        [Fact]
+        public void Can_Deserialize_Nested_Array_Of_Strings()
+        {
+            var output = deserialize_output<NestedStringArraySample>(@"SampleData\NestedStringArraySample.xml");
+            Assert.NotEmpty(output.Images);
+            Assert.Equal(4, output.Images.Count());
+        }
+
 
 		[Fact]
 		public void Can_Deserialize_Empty_Elements_to_Nullable_Values()

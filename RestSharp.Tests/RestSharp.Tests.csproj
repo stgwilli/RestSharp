@@ -104,6 +104,9 @@
     <Content Include="SampleData\InlineListSample.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="SampleData\NestedStringArraySample.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="SampleData\jsonarray.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

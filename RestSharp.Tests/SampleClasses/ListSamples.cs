@@ -20,6 +20,12 @@ namespace RestSharp.Tests.SampleClasses
         public Image[] Images { get; set; }
     }
 
+    public class NestedStringArraySample
+    {
+        public string[] images { get; set; }
+        public string[] Images { get; set; }
+    }
+
     public class NestedArraySample
     {
         public image[] images { get; set; }
